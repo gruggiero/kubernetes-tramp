@@ -5,7 +5,7 @@
 
 `kubernetes-tramp.el` offers a TRAMP method for Docker containers deployed in a Kubernetes cluster.
 
-> **NOTE**: `docker-tramp.el` relies on the `kubectl exec` command. Tested
+> **NOTE**: `kubernetes-tramp.el` relies on the `kubectl exec` command. Tested
 > with version 1.7.3
 
 This project is just a minor adaptation of [*docker-tramp.el*](https://github.com/emacs-pe/docker-tramp.el)
@@ -15,7 +15,7 @@ All the merits should go to [*Mario Rodas*](marsam@users.noreply.github.com) whi
 
 ## Usage
 
-Offers the TRAMP method `docker` to access running containers
+Offers the TRAMP method `kubectl` to access running containers
 
     C-x C-f /kubectl:container:/path/to/file
 
