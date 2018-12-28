@@ -82,6 +82,11 @@
   :type 'boolean
   :group 'kubernetes-tramp)
 
+(defcustom tramp-remote-shell-executable "bash"
+  "Default shell executable"
+  :type 'string
+  :group 'kubernetes-tramp)
+
 ;;;###autoload
 (defconst kubernetes-tramp-completion-function-alist
   '((kubernetes-tramp--parse-running-containers  ""))
@@ -131,7 +136,7 @@ to connect to the default user containers."
                `(,kubernetes-tramp-method
                  (tramp-login-program      ,kubernetes-tramp-kubectl-executable)
                  (tramp-login-args         (,kubernetes-tramp-kubectl-options ("exec" "-it") ("-u" "%u") ("%h") ("sh")))
-                 (tramp-remote-shell       "bash")
+                 (tramp-remote-shell       ,tramp-remote-shell-executable)
                  (tramp-remote-shell-args  ("-i" "-c")))))
 
 ;;;###autoload
