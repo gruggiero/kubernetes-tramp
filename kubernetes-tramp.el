@@ -104,6 +104,14 @@ Return a list of containers names"
            for info = (split-string line "[[:space:]]+" t)
            collect (car info)))
 
+(defun kubernetes-tramp--running-containers-of (context namespace)
+  "Collect kubernetes running containers in given context and namespace.
+
+Return a list of containers names"
+  (cl-loop for line in (cdr (apply #'process-lines kubernetes-tramp-kubectl-executable (list "--context" context "--namespace" namespace "get" "po" )))
+           for info = (split-string line "[[:space:]]+" t)
+           collect (car info)))
+
 (defun kubernetes-tramp--parse-running-containers (&optional ignored)
   "Return a list of (user host) tuples.
 
@@ -112,6 +120,17 @@ user is an empty string because the kubectl TRAMP method uses bash
 to connect to the default user containers."
   (cl-loop for name in (kubernetes-tramp--running-containers)
            collect (list ""  name)))
+
+(defun kubernetes-tramp--parse-running-containers-of (&optional contextAndNamespace)
+  "Return a list of (user host) tuples. contextAndNamespace is
+expected to be a string with the k8s context, a pipe (|), and
+then the namespace."
+  (let* ((split (split-string contextAndNamespace "|"))
+         (context (nth 0 split))
+         (namespace (nth 1 split)))
+    (cl-loop for name in (kubernetes-tramp--running-containers-of context namespace)
+             collect (list ""  name)))
+  )
 
 ;;;###autoload
 (defun kubernetes-tramp-cleanup ()
@@ -144,6 +163,28 @@ to connect to the default user containers."
   '(progn
      (kubernetes-tramp-add-method)
      (tramp-set-completion-function kubernetes-tramp-method kubernetes-tramp-completion-function-alist)))
+
+(defun kubernetes-tramp-define-method (name context namespace)
+  "Defines a new TRAMP method 'name' that will use kubectl with the given context and namespace.
+
+You typically invoke kubernetes-tramp-define-method in your init.el, registering a tramp method for each
+context+namespace combination that you regularly use."
+  (eval-after-load 'tramp
+    '(progn
+       (let* ((method (format "%s" name))
+              (contextAndNamespace (format "%s|%s" context namespace)))
+         (message "Adding tramp method %s" method)
+         (add-to-list 'tramp-methods
+                    `(,method
+                      (tramp-login-program      ,kubernetes-tramp-kubectl-executable)
+                      (tramp-login-args         (,kubernetes-tramp-kubectl-options ("--context" ,context) ("--namespace" ,namespace) ("exec" "-it") ("-u" "%u") ("%h") ("bash")))
+                      (tramp-remote-shell       ,tramp-remote-shell-executable)
+                      (tramp-remote-shell-args  ("-i" "-c"))))
+         (setq completions `((kubernetes-tramp--parse-running-containers-of ,contextAndNamespace)))
+         (message "  completions: %s" completions)
+         ;;can't do the below, since it will check if files actually exist before adding to the list...
+         ;;(tramp-set-completion-function method completions)
+         (add-to-list 'tramp-completion-function-alist (cons method completions))))))
 
 (provide 'kubernetes-tramp)
 
